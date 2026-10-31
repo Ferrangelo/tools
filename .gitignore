@@ -1,0 +1,3 @@
+# Built binaries: each tool's binary has the same name as its folder.
+/claude-status/claude-status
+/codex-status/codex-status
