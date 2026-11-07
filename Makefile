@@ -2,7 +2,7 @@
 # To add a tool: create <name>/, add <name> to TOOLS, and add a build rule
 # below if the tool needs compiling. Scripts with a shebang need no rule.
 PREFIX ?= $(HOME)/.local
-TOOLS := claude-status codex-status
+TOOLS := claude-status codex-status net-check
 
 all: $(TOOLS)
 
@@ -12,11 +12,15 @@ claude-status:
 codex-status:
 	cd codex-status && go build -trimpath -ldflags="-s -w" -o codex-status .
 
+net-check:
+	cd net-check && go build -trimpath -ldflags="-s -w" -o net-check .
+
 install: all
 	for t in $(TOOLS); do install -Dm755 $$t/$$t $(PREFIX)/bin/$$t; done
 
 clean:
 	$(MAKE) -C claude-status clean
 	rm -f codex-status/codex-status
+	rm -f net-check/net-check
 
 .PHONY: all install clean $(TOOLS)
