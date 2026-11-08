@@ -5,7 +5,7 @@ Small single-file tools. Each folder holds one tool; the binary or script has th
 | Tool | Language | What it does |
 | --- | --- | --- |
 | `claude-status` | C (libcurl, cJSON) | Prints Claude plan usage limits without starting a session. |
-| `codex-status` | Go | Prints ChatGPT Codex quotas without starting a model turn. |
+| `codex-status` | Go | Reads ChatGPT Codex quotas directly, with a Codex app-server fallback. |
 | `net-check` | Go | Reports route, gateway, name resolution, and TCP reachability. |
 | `randint` | C | Prints a random integer from an inclusive range (default 0 to 10). |
 | `rename-by-date` | Bash | Renames files in a directory to `0001.ext`, `0002.ext`, ... by creation date. |
@@ -17,6 +17,14 @@ make            # build every tool
 make install    # copy them to ~/.local/bin
 make clean      # delete built binaries
 ```
+
+### codex-status
+
+`codex-status` reads `auth.json` from the Codex home directory but never writes
+it. It requests quotas from an undocumented endpoint that may change. If the
+direct request fails, it warns and falls back to `codex app-server`. Use
+`--fallback` to skip the direct request. `--json` prints the raw response from
+the successful path; the direct and app-server response shapes differ.
 
 ### net-check
 

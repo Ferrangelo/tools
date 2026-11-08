@@ -36,7 +36,7 @@ type bucket struct {
 	Credits   *credits `json:"credits"`
 }
 
-func readLimits() (json.RawMessage, error) {
+func readFallback() (json.RawMessage, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, "codex", "app-server", "--listen", "stdio://")
@@ -323,10 +323,28 @@ func display(raw json.RawMessage) error {
 	return nil
 }
 
+func fetchLimits(fallbackOnly bool, direct func() (json.RawMessage, json.RawMessage, error), fallback func() (json.RawMessage, error), warnings io.Writer) (json.RawMessage, json.RawMessage, error) {
+	if fallbackOnly {
+		raw, err := fallback()
+		return raw, raw, err
+	}
+	raw, normalized, directErr := direct()
+	if directErr == nil {
+		return raw, normalized, nil
+	}
+	fmt.Fprintf(warnings, "codex-status: direct request failed (%v), falling back to codex app-server\n", directErr)
+	raw, err := fallback()
+	if err != nil {
+		return nil, nil, fmt.Errorf("direct request failed (%v); codex app-server failed: %w", directErr, err)
+	}
+	return raw, raw, nil
+}
+
 func run() error {
-	rawOutput := flag.Bool("json", false, "Print the raw quota response")
+	rawOutput := flag.Bool("json", false, "Print the raw response from the successful path (shapes differ)")
+	fallbackOnly := flag.Bool("fallback", false, "Use only codex app-server")
 	flag.Usage = func() {
-		fmt.Fprintf(flag.CommandLine.Output(), "Usage: codex-status [--json]\n\n"+
+		fmt.Fprintf(flag.CommandLine.Output(), "Usage: codex-status [--json] [--fallback]\n\n"+
 			"Prints ChatGPT Codex usage limits.\n")
 		flag.PrintDefaults()
 		fmt.Fprintln(flag.CommandLine.Output(), "\nSet NO_COLOR=1 to turn off colours.")
@@ -336,7 +354,7 @@ func run() error {
 	if flag.NArg() != 0 {
 		return fmt.Errorf("unexpected arguments: %s", strings.Join(flag.Args(), " "))
 	}
-	raw, err := readLimits()
+	raw, normalized, err := fetchLimits(*fallbackOnly, readDirect, readFallback, os.Stderr)
 	if err != nil {
 		return err
 	}
@@ -348,7 +366,7 @@ func run() error {
 		fmt.Println(formatted.String())
 		return nil
 	}
-	return display(raw)
+	return display(normalized)
 }
 
 func main() {
