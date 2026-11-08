@@ -2,7 +2,7 @@
 # To add a tool: create <name>/, add <name> to TOOLS, and add a build rule
 # below if the tool needs compiling. Scripts with a shebang need no rule.
 PREFIX ?= $(HOME)/.local
-TOOLS := claude-status codex-status net-check randint
+TOOLS := claude-status codex-status net-check randint rename-by-date
 
 all: $(TOOLS)
 

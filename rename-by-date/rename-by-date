@@ -1,0 +1,103 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+    printf 'Usage: %s [--dry-run] DIRECTORY\n' "${0##*/}"
+    printf 'Renames files to 0001.ext, 0002.ext, ... by creation date.\n'
+    printf '  --dry-run  show the new names without renaming\n'
+}
+
+dry_run=0
+dir=""
+while (( $# > 0 )); do
+    case $1 in
+        --dry-run) dry_run=1 ;;
+        -h|--help) usage; exit 0 ;;
+        --) shift; break ;;
+        -*) printf 'Unknown option: %s\n' "$1" >&2; usage >&2; exit 1 ;;
+        *)
+            if [[ -n $dir ]]; then
+                usage >&2
+                exit 1
+            fi
+            dir=$1
+            ;;
+    esac
+    shift
+done
+# Arguments after "--" are directories, even if they start with "-".
+if (( $# > 0 )); then
+    if [[ -n $dir || $# -gt 1 ]]; then
+        usage >&2
+        exit 1
+    fi
+    dir=$1
+fi
+if [[ -z $dir ]]; then
+    usage >&2
+    exit 1
+fi
+
+cd -- "$dir"
+shopt -s nullglob dotglob
+
+records=()
+files=()
+targets=()
+
+for file in ./*; do
+    [[ -f "$file" && ! -L "$file" ]] || continue
+    timestamp=$(stat --printf='%W' -- "$file")
+    if (( timestamp <= 0 )); then
+        printf 'Creation date unavailable: %q\n' "$file" >&2
+        exit 1
+    fi
+    records+=("$timestamp $file")
+done
+
+if (( ${#records[@]} == 0 )); then
+    printf 'No regular files found.\n'
+    exit 0
+fi
+
+i=0
+while IFS= read -r -d '' entry; do
+    file=${entry#* }
+    name=${file#./}
+    ext=""
+    if [[ ${name#?} == *.* ]]; then
+        ext=".${name##*.}"
+    fi
+
+    i=$((i + 1))
+    printf -v target './%04d%s' "$i" "$ext"
+    files+=("$file")
+    targets+=("$target")
+    printf '%q -> %q\n' "$file" "$target"
+done < <(printf '%s\0' "${records[@]}" | LC_ALL=C sort -z -n)
+
+if (( dry_run )); then
+    printf 'Dry run: no files renamed.\n'
+    exit 0
+fi
+
+# Stage files so existing numbered names cannot collide.
+tmp=$(mktemp -d ./.rename.XXXXXXXX)
+printf 'Staging directory: %s\n' "$tmp"
+trap 'printf "Rename interrupted. Check staging directory: %s\n" "$tmp" >&2' ERR
+
+for index in "${!files[@]}"; do
+    mv -T -- "${files[index]}" "$tmp/$index"
+done
+
+for index in "${!files[@]}"; do
+    mv -nT -- "$tmp/$index" "${targets[index]}"
+    if [[ -e "$tmp/$index" || -L "$tmp/$index" ]]; then
+        printf 'Destination exists: %q. Remaining files are in %q\n' \
+            "${targets[index]}" "$tmp" >&2
+        exit 1
+    fi
+done
+
+rmdir -- "$tmp"
+trap - ERR

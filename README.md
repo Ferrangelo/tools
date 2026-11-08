@@ -8,6 +8,7 @@ Small single-file tools. Each folder holds one tool; the binary or script has th
 | `codex-status` | Go | Prints ChatGPT Codex quotas without starting a model turn. |
 | `net-check` | Go | Reports route, gateway, name resolution, and TCP reachability. |
 | `randint` | C | Prints a random integer from an inclusive range (default 0 to 10). |
+| `rename-by-date` | Bash | Renames files in a directory to `0001.ext`, `0002.ext`, ... by creation date. |
 
 ## Use
 
