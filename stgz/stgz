@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if (( $# != 1 )); then
+    printf 'Usage: %s ARCHIVE\nExtracts a .tar.gz, .tgz, or .tar archive. A name without one of\nthose extensions means NAME.tar.gz.\n' "${0##*/}" >&2
+    exit 1
+fi
+case $1 in
+    *.tar.gz|*.tgz|*.tar) archive=$1 ;;
+    *) archive=$1.tar.gz ;;
+esac
+tar -xf "$archive"

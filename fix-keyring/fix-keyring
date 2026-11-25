@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Electron apps do not recognize niri as a desktop environment, so they skip
+# the GNOME keyring and store secrets unencrypted. Adding
+# --password-store=gnome-libsecret to each launcher's Exec lines fixes that.
+# App updates overwrite the launchers, so run this after every update.
+
+flag=--password-store=gnome-libsecret
+
+# Each entry is "desktop file:command name".
+launchers=(
+    "$HOME/.local/share/applications/com.anthropic.Claude.desktop:claude-desktop"
+    "/usr/share/applications/signal.desktop:signal-desktop"
+)
+
+usage() {
+    printf 'Usage: %s\n' "${0##*/}"
+    printf 'Adds %s to the Exec lines of these launchers:\n' "$flag"
+    printf '  %s\n' "${launchers[@]%%:*}"
+    printf 'Lines that already set --password-store are left unchanged.\n'
+}
+
+case ${1-} in
+    '') ;;
+    -h|--help) usage; exit 0 ;;
+    *) usage >&2; exit 1 ;;
+esac
+
+status=0
+for entry in "${launchers[@]}"; do
+    file=${entry%%:*}
+    cmd=${entry#*:}
+
+    if [[ ! -f $file ]]; then
+        printf 'skip: %s not found\n' "$file"
+        continue
+    fi
+
+    # A line counts as patched when it sets any --password-store value,
+    # quoted or not. The sed expression below edits only unpatched lines, so a
+    # second run is a no-op.
+    total=$(grep -c -E "^Exec=$cmd( |\$)" "$file" || true)
+    patched=$(grep -c -E "^Exec=$cmd .*--password-store=" "$file" || true)
+    if (( total == 0 )); then
+        printf 'skip: %s has no Exec line for %s\n' "$file" "$cmd"
+        continue
+    fi
+    if (( total == patched )); then
+        printf 'ok:   %s\n' "$file"
+        continue
+    fi
+
+    script="/^Exec=$cmd\( \|\$\)/{/--password-store=/!s|^Exec=$cmd|& $flag|}"
+    sudo=()
+    if [[ ! -w $file ]]; then
+        sudo=(sudo)
+    fi
+    if "${sudo[@]}" sed -i "$script" "$file"; then
+        printf 'done: %s\n' "$file"
+    else
+        printf 'error: could not edit %s\n' "$file" >&2
+        status=1
+    fi
+done
+exit "$status"

@@ -1,0 +1,21 @@
+#!/bin/bash
+cd
+#source .zshrc
+echo pacman
+sudo pacman -Syu --noconfirm
+
+echo
+echo flatpak
+flatpak update -y
+
+echo
+echo rustup
+rustup update
+
+echo
+echo cargo
+cargo install-update -a
+
+echo
+echo fix-keyring
+fix-keyring

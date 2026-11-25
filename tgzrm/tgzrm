@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if (( $# != 1 )); then
+    printf 'Usage: %s PATH\nPacks PATH into PATH.tar.gz, then deletes PATH.\n' "${0##*/}" >&2
+    exit 1
+fi
+# Strip trailing slashes so "dir/" becomes "dir.tar.gz", not "dir/.tar.gz".
+src=${1%"${1##*[!/]}"}
+if [[ -z $src ]]; then
+    printf 'Refusing to pack /\n' >&2
+    exit 1
+fi
+# Remove a partial archive so a failed run leaves no broken file behind.
+if ! tar -zcf "$src.tar.gz" -- "$src"; then
+    rm -f -- "$src.tar.gz"
+    exit 1
+fi
+rm -rf -- "$src"

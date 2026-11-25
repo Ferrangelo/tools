@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if (( $# != 1 )); then
+    printf 'Usage: %s ARCHIVE\nExtracts a .tar.gz, .tgz, or .tar archive, then deletes it. A name\nwithout one of those extensions means NAME.tar.gz.\n' "${0##*/}" >&2
+    exit 1
+fi
+case $1 in
+    *.tar.gz|*.tgz|*.tar) archive=$1 ;;
+    *) archive=$1.tar.gz ;;
+esac
+# set -e stops here if tar fails, so the archive is deleted only after a full extraction.
+tar -xf "$archive"
+rm -f -- "$archive"

@@ -6,9 +6,15 @@ Small single-file tools. Each folder holds one tool; the binary or script has th
 | --- | --- | --- |
 | `claude-status` | C (libcurl, cJSON) | Prints Claude plan usage limits without starting a session. |
 | `codex-status` | Go | Reads ChatGPT Codex quotas directly, with a Codex app-server fallback. |
+| `fix-keyring` | Bash | Adds `--password-store=gnome-libsecret` to the Claude Desktop and Signal launchers. |
 | `net-check` | Go | Reports route, gateway, name resolution, and TCP reachability. |
 | `randint` | C | Prints a random integer from an inclusive range (default 0 to 10). |
 | `rename-by-date` | Bash | Renames files in a directory to `0001.ext`, `0002.ext`, ... by creation date. |
+| `softupdate` | Bash | Updates pacman, flatpak, rustup, and cargo packages, then runs `fix-keyring`. |
+| `stgz` | Bash | Extracts a `.tar.gz`, `.tgz`, or `.tar` archive. Without an extension, extracts `NAME.tar.gz`. |
+| `stgzrm` | Bash | Same as `stgz`, then deletes the archive. |
+| `tgz` | Bash | Packs a file or directory into `NAME.tar.gz`. |
+| `tgzrm` | Bash | Same as `tgz`, then deletes the original. |
 
 ## Use
 
